@@ -1,3 +1,4 @@
+
 mutable struct NODE
     lbs::Vector{Float64}
     ubs::Vector{Float64}
@@ -38,4 +39,23 @@ function max_depth(curr_node)
         end
         return 1 + maximum(depths)
     end
+end
+
+function get_bounds_list(root_node)
+    q = Queue{NODE}()
+    enqueue!(q, root_node)
+    lbs = []
+    ubs = []
+    cats = []
+    while length(q) > 0
+        curr_node = dequeue!(q)
+        push!(lbs, curr_node.lbs)
+        push!(ubs, curr_node.ubs)
+        push!(cats, curr_node.cats)
+        children = curr_node.children
+        for child in children
+            enqueue!(q, child)
+        end
+    end
+    return lbs, ubs, cats
 end
