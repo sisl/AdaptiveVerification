@@ -59,3 +59,14 @@ function get_bounds_list(root_node)
     end
     return lbs, ubs, cats
 end
+
+"""
+KDTrees
+"""
+
+mutable struct KDNODE
+    dim::Int32
+    split::Float64
+    left::KDNODE
+    right::KDNODE
+end
