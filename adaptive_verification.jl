@@ -3,13 +3,13 @@ using DataStructures
 include("tree_utils.jl")
 include("run_reluval.jl")
 
-function adaptive_verification(root_node::NODE; min_diff = 0.1)
+function adaptive_verification(root_node::NODE; min_diff = 0.1, network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
      q = Queue{NODE}()
      enqueue!(q, root_node)
      while length(q) > 0
-        println(length(q))
+        #println(length(q))
         curr_node = dequeue!(q)
-        next_nodes = verify_and_split!(curr_node, min_diff = min_diff)
+        next_nodes = verify_and_split!(curr_node, min_diff = min_diff, network_path = network_path)
         for i = 1:length(next_nodes)
             enqueue!(q, next_nodes[i])
         end 
@@ -17,10 +17,10 @@ function adaptive_verification(root_node::NODE; min_diff = 0.1)
      return root_node
 end
 
-function verify_and_split!(curr_node::NODE; min_diff = 0.1)
+function verify_and_split!(curr_node::NODE; min_diff = 0.1, network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
     next_nodes = []
     # First run verification on possible advisories
-    get_categories!(curr_node)
+    get_categories!(curr_node, network_path = network_path)
     # Decide if we should split
     max_diff = maximum(curr_node.ubs .- curr_node.lbs)
     split = (length(curr_node.cats) > 1) && (max_diff > min_diff)

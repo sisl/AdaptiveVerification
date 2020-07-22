@@ -1,7 +1,7 @@
-function get_categories!(curr_node::NODE)
+function get_categories!(curr_node::NODE; network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
     lbs, ubs = unnormalize_bounds(curr_node.lbs), unnormalize_bounds(curr_node.ubs)
     old_cats = deepcopy(curr_node.cats)
-    times, poss_cats = verify_region(lbs, ubs, advs = old_cats)
+    times, poss_cats = verify_region(lbs, ubs, advs = old_cats, network_path = network_path)
     poss_inds = findall(poss_cats .> 0)
     curr_node.cats = old_cats[poss_inds]
 end
