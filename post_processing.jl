@@ -24,10 +24,29 @@ function discretize!(curr_node::NODE)
     lbs = unnormalize_bounds(curr_node.lbs)
     
     # Decide if need to split
-    curr_diff = ubs .- lbs
-    hbin = findfirst(max(abs(lbs[1]), abs(ubs[1])) .< hsplits)
-    ḣ₀bin = findfirst(max(abs(lbs[2]), abs(ubs[2])) .< ḣ₀splits)
+    h_inrange_pos = lbs[1] .< hsplits .< ubs[1]
+    h_inrange_neg = lbs[1] .< -hsplits .< ubs[1]
+    h_inrange = h_inrange_pos .| h_inrange_neg
+
+    ḣ₀_inrange_pos = lbs[2] .< ḣ₀splits .< ubs[2]
+    ḣ₀_inrange_neg = lbs[2] .< -ḣ₀splits .< ubs[2]
+    ḣ₀_inrange = ḣ₀_inrange_pos .| ḣ₀_inrange_neg
+
+    # println("hmin: $(lbs[1]), hmax: $(ubs[1])")
+    # println("in range: $h_inrange")
+    # println("in rangep pos: $h_inrange_pos")
+
+    hbin = findfirst(h_inrange)
+    if hbin == nothing
+        hbin = findfirst(max(abs(lbs[1]), abs(ubs[1])) .< hsplits)
+    end
+    ḣ₀bin = findfirst(ḣ₀_inrange)
+    if ḣ₀bin == nothing
+        ḣ₀bin = findfirst(max(abs(lbs[2]), abs(ubs[2])) .< ḣ₀splits)
+    end
+
     dims_to_split = []
+    curr_diff = ubs .- lbs
     curr_diff[1] > hwidths[hbin] ? push!(dims_to_split, 1) : nothing
     curr_diff[2] > ḣ₀widths[ḣ₀bin] ? push!(dims_to_split, 2) : nothing
 
@@ -77,4 +96,45 @@ function equivalent_KD(curr_node::NODE)
         end
     end
 end
+
+# Hard-coded for 2D with splitting strategy in all dimensions
+function equivalent_2D(curr_node::NODE)
+    children = curr_node.children
+    if length(children) == 0
+        if length(curr_node.cats) == 0
+            curr_node.cats = collect(0:8)
+            get_categories!(curr_node, network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra03_v5_25HU_1000.nnet")
+        end
+        return leafnode(cats = curr_node.cats)
+    elseif length(children) == 2
+        # Figure out which dimension got split
+        lbdiffs = children[2].lbs .- curr_node.lbs
+        split_dim = findfirst(lbdiffs .!= 0.0)
+        split = children[2].lbs[split_dim]
+
+        # Create the tree
+        top = kdnode(dim = split_dim, split = split)
+
+        # Recursively add children
+        top.left = equivalent_2D(children[1])
+        top.right = equivalent_2D(children[2])
+        return top
+    else
+        first_split = children[2].lbs[1]
+        second_split = children[3].lbs[2]
+
+        # Create the tree
+        top = kdnode(dim = 1, split = first_split)
+        top.left = kdnode(dim = 2, split = second_split)
+        top.right = kdnode(dim = 2, split = second_split)
+
+        # Recursively add children
+        top.left.left = equivalent_2D(children[1])
+        top.right.left = equivalent_2D(children[2])
+        top.left.right = equivalent_2D(children[3])
+        top.right.right = equivalent_2D(children[4])
+        return top
+    end
+end
+
 

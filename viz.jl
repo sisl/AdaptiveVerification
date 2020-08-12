@@ -200,6 +200,37 @@ function plot_nadvs(lower_bound_list::Vector, upper_bound_list::Vector, cats;
     return ax
 end
 
+function plot_nadvs(root_node::KDNODE)
+
+    # Colors
+    one_adv = RGB(0.0,0.0,1.0) # blue
+    two_adv = RGB(1.0,0.0,0.0) # red
+    three_adv = RGB(1.0,1.0,0.0) # yellow
+
+    colors = [one_adv, two_adv, three_adv]
+
+    xmin = -8000
+    xmax = 8000
+    ymin = -100
+    ymax = 100
+    nbins = 100
+
+    ax = Axis(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, width="7cm", height="8cm", 
+    xlabel=L"$h$", ylabel=L"$\dot{h}_0$", title="Neural Network Advisories")
+
+    function get_heat(x, y)
+        h = x / 16000
+        ḣ₀ = y / 200
+        leaf = get_leaf(root_node, [h, ḣ₀])
+        return length(leaf.cats)
+    end
+
+    push!(ax, Plots.Image(get_heat, (xmin, xmax), (ymin, ymax), zmin = 1, zmax = 3,
+    xbins = nbins, ybins = nbins, colormap = ColorMaps.RGBArrayMap(colors), colorbar=false))
+
+    return ax
+end
+
 function get_key()
     # Colors
     ra_1 = RGB(1.,1.,1.) # white
