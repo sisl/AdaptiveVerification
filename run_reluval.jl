@@ -17,7 +17,7 @@ function verify_region(lbs, ubs; advs = collect(0:8), network_path = "/scratch/s
     return times, advs
 end
 
-function get_categories!(cats, lbs, ubs; 
+function get_categories(cats, lbs, ubs; 
         network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
     
     lbs, ubs = unnormalize_bounds(lbs), unnormalize_bounds(ubs)

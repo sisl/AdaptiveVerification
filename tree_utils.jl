@@ -43,3 +43,18 @@ function get_leaf(root_node, point)
     end
     return curr_node
 end
+
+function get_leaves(root_node)
+    leaves = []
+    get_leaves_helper(root_node, leaves)
+    return leaves
+end
+
+function get_leaves_helper(root_node, leaves)
+    if typeof(root_node.left) == LEAFNODE
+        push!(leaves, root_node)
+    else
+        get_leaves_helper(root_node.left, leaves)
+        get_leaves_helper(root_node.right, leaves)
+    end
+end
