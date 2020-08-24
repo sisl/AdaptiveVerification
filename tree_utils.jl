@@ -58,3 +58,50 @@ function get_leaves_helper(root_node, leaves)
         get_leaves_helper(root_node.right, leaves)
     end
 end
+
+function get_bounds_and_cats(root_node)
+    cats = []
+    lbs = []
+    ubs = []
+    
+    lb_s = Stack{Vector{Float64}}()
+    ub_s = Stack{Vector{Float64}}()
+    s = Stack{VERIFYNODE}()
+
+    push!(lb_s, [-0.5, -0.5])
+    push!(ub_s, [0.5, 0.5])
+    push!(s, root_node)
+
+    while !isempty(s)
+        curr = pop!(s)
+        curr_lbs = pop!(lb_s)
+        curr_ubs = pop!(ub_s)
+
+        if typeof(curr.left) == LEAFNODE
+            push!(cats, curr.cats)
+            push!(lbs, curr_lbs)
+            push!(ubs, curr_ubs)
+        else
+            # Traverse tree and keep track of bounds
+            dim = curr.dim
+            split = curr.split
+            # Go left, upper bounds will change
+            left_ubs = copy(curr_ubs)
+            left_ubs[dim] = split
+
+            push!(lb_s, curr_lbs)
+            push!(ub_s, left_ubs)
+            push!(s, curr.left)
+
+            # Go right, lower bounds will change
+            right_lbs = copy(curr_lbs)
+            right_lbs[dim] = split
+            
+            push!(lb_s, right_lbs)
+            push!(ub_s, curr_ubs)
+            push!(s, curr.right)
+        end
+    end
+
+    return lbs, ubs, cats
+end

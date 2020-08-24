@@ -7,8 +7,8 @@ using Reel
 Reel.extension(m::MIME"image/svg+xml") = "svg"
 Reel.set_output_type("gif") # may be necessary for use in IJulia
 
-include("nnet_functions.jl")
-include("tree_utils.jl")
+#include("nnet_functions.jl")
+#include("tree_utils.jl")
 
 COC = 0
 DNC = 1
@@ -21,64 +21,6 @@ SDES2500 = 7
 SCL2500 = 8
 
 actions = [COC, DNC, DND, DES1500, CL1500, SDES1500, SCL1500, SDES2500, SCL2500]
-
-function cells_on_nn(root_node::NODE, depth::Int64; 
-    network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
-
-    # Colors
-    ra_1 = RGB(1.,1.,1.) # white
-    ra_2 = RGB(.0,1.0,1.0) # cyan
-    ra_3 = RGB(144.0/255.0,238.0/255.0,144.0/255.0) # lightgreen
-    ra_4 = RGB(30.0/255.0,144.0/255.0,1.0) # dodgerblue
-    ra_5 = RGB(0.0,1.0,.0) # lime
-    ra_6 = RGB(0.0,0.0,1.0) # blue
-    ra_7 = RGB(34.0/255.0,139.0/255.0,34.0/255.0) # forestgreen
-    ra_8 = RGB(0.0,0.0,128.0/255.0) # navy
-    ra_9 = RGB(0.0,100.0/255.0,0.0) # darkgreen
-
-    colors = [ra_1;ra_2;ra_3;ra_4;ra_5;ra_6;ra_7;ra_8;ra_9]
-
-    nnet = read_network(network_path)
-
-    root_lbs = unnormalize_bounds(root_node.lbs)
-    ḣ₁ = root_lbs[3]
-    τ = root_lbs[4]
-
-    xmin = -8000
-    xmax = 8000
-    ymin = -100
-    ymax = 100
-    nbins = 100
-
-    ax = Axis(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, width="7cm", height="8cm", 
-    xlabel=L"$h$", ylabel=L"$\dot{h}_0$", title="Neural Network Advisories")
-
-    # Policy
-    inputsNet = hcat([[h, ḣ₀, ḣ₁, τ] for h=LinRange(xmin,xmax,nbins) for ḣ₀=LinRange(ymin,ymax,nbins)]...)
-    q_nnet = evaluate_network_multiple(nnet, inputsNet)
-
-    ind = 1
-    function get_heat_nn(x, y)
-        qvals = q_nnet[:,ind]
-        ind += 1
-        return actions[argmax(qvals)]
-    end
-
-    push!(ax, Plots.Image(get_heat_nn, (xmin, xmax), (ymin, ymax), zmin = 0, zmax = 8,
-    xbins = nbins, ybins = nbins, colormap = ColorMaps.RGBArrayMap(colors), colorbar=false))
-
-    leaves = [];
-    get_leaves(root_node, leaves, depth)
-
-    # Rectangles
-    for leaf in leaves
-        lbs = unnormalize_bounds(leaf.lbs)
-        ubs = unnormalize_bounds(leaf.ubs)
-        push!(ax, Plots.Command(get_rectangle(lbs, ubs)))
-    end
-
-    return ax
-end
 
 function cells_on_nn(lower_bound_list::Vector, upper_bound_list::Vector; 
     network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
@@ -136,55 +78,21 @@ function cells_on_nn(lower_bound_list::Vector, upper_bound_list::Vector;
     return ax
 end
 
-function plot_nadvs(root_node::NODE, depth::Int64;
-    network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
+function plot_nadvs(tree::VERIFYNODE)
+    
+    lbs_u, ubs_u, cats = get_bounds_and_cats(tree)
 
-    nnet = read_network(network_path)
-
-    xmin = -8000
-    xmax = 8000
-    ymin = -100
-    ymax = 100
-
-    ax = Axis(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, width="7cm", height="8cm", 
-    xlabel=L"$h$", ylabel=L"$\dot{h}_0$", title="Number of Possible Advisories")
-
-    leaves = [];
-    get_leaves(root_node, leaves, depth)
-
-    # Rectangles
-    for leaf in leaves
-        lbs = unnormalize_bounds(leaf.lbs)
-        ubs = unnormalize_bounds(leaf.ubs)
-        cats = leaf.cats
-        if length(cats) == 1
-            color = "blue"
-        elseif length(cats) == 2
-            color = "red"
-        else
-            color = "yellow"
-        end
-        push!(ax, Plots.Command(get_filled_rectangle(lbs, ubs, color)))
-    end
-
-    return ax
-end
-
-function plot_nadvs(lower_bound_list::Vector, upper_bound_list::Vector, cats;
-    network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
-
-    nnet = read_network(network_path)
     # Unnormalize everying
-    lbs = [lower_bound_list[i] .* nnet.ranges[1:4] .+ nnet.means[1:4] for i = 1:length(lower_bound_list)]
-    ubs = [upper_bound_list[i] .* nnet.ranges[1:4] .+ nnet.means[1:4] for i = 1:length(upper_bound_list)]
+    lbs = [unnormalize_point(lbs_u[i]) for i = 1:length(lbs_u)]
+    ubs = [unnormalize_point(ubs_u[i]) for i = 1:length(ubs_u)]
 
-    xmin = -8000
-    xmax = 8000
-    ymin = -100
-    ymax = 100
+    ymin = -8000
+    ymax = 8000
+    xmin = -100
+    xmax = 100
 
-    ax = Axis(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, width="7cm", height="8cm", 
-    xlabel=L"$h$", ylabel=L"$\dot{h}_0$", title="Number of Possible Advisories")
+    ax = Axis(xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, width="10cm", height="10cm", 
+    xlabel=L"$\dot{h}_0$", ylabel=L"$h$", title="Number of Possible Advisories")
 
     for i = 1:length(lbs)
         if length(cats[i]) == 1
@@ -194,7 +102,8 @@ function plot_nadvs(lower_bound_list::Vector, upper_bound_list::Vector, cats;
         else
             color = "yellow"
         end
-        push!(ax, Plots.Command(get_filled_rectangle(lbs[i], ubs[i], color)))
+        push!(ax, Plots.Command(get_filled_rectangle([lbs[i][2], lbs[i][1]],
+                                                     [ubs[i][2], ubs[i][1]], color)))
     end
 
     return ax
@@ -282,20 +191,6 @@ function get_key()
     return key
 end
 
-function plot_all(root_node::NODE, depth::Int64; 
-    network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
-    
-    ax1 = plot_nadvs(root_node, depth, network_path = network_path)
-    ax2 = cells_on_nn(root_node, depth, network_path = network_path)
-    key = get_key()
-    
-    g = GroupPlot(3, 1, groupStyle = "horizontal sep=2cm")
-    push!(g, ax1)
-    push!(g, ax2)
-    push!(g, key)
-    g
-end
-
 function plot_all(lower_bound_list::Vector, upper_bound_list::Vector, cats;
     network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
     
@@ -312,29 +207,6 @@ end
 
 """ Creating gifs """
 
-function create_gif(root_node::NODE; fps = 2,
-    network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
-    
-    frames = Frames(MIME("image/svg+xml"), fps = fps)
-    depth = convert(Int64, max_depth(root_node))
-    for i = 0:depth
-        push!(frames, plot_all(root_node, i, network_path = network_path))
-    end
-    return frames
-end
-
-function create_long_gif(root_node::NODE; fps = 12,
-    network_path = "/scratch/smkatz/VerticalCAS/networks/bugfix_pra01_v5_25HU_1000.nnet")
-    
-    lbs, ubs, cats = get_bounds_list(root_node)
-
-    frames = Frames(MIME("image/svg+xml"), fps = fps)
-    for i = 1:length(lbs)
-        push!(frames, plot_all(lbs[1:i], ubs[1:i], cats[1:i], network_path = network_path))
-    end
-    return frames
-end
-
 """ Plotting utils """
 
 function get_rectangle(lb, ub)
@@ -347,4 +219,8 @@ end
 
 function unnormalize_bounds(bounds; ranges = [16000.0, 200.0, 200.0, 40.0], means = [0.0, 0.0, 0.0, 20.0])
     return bounds .* ranges + means
+end
+
+function unnormalize_point(point::Vector{Float64})
+    return point .* [16000.0, 200.0]
 end

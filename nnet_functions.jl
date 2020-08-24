@@ -292,6 +292,38 @@ function evaluate_network_multiple(nnet::NNet,input::Array{Float64,2})
     return outputs
 end
 
+# NOTE: ASSUMES INPUTS ARE NORMALIZED!!!!!!!
+function evaluate_network_faster(nnet::NNet,input::Array{Float64,2})
+    numLayers = nnet.numLayers
+    inputSize = nnet.inputSize
+    outputSize = nnet.outputSize
+    symmetric = nnet.symmetric
+    biases = nnet.biases
+    weights = nnet.weights
+        
+    _,numInputs = size(input)
+    symmetryVec = zeros(numInputs)
+    
+    
+    nnetInd = 1
+    
+    inputs = input
+
+    for layer = 1:numLayers-1
+        inputs = max.(weights[nnetInd][layer]*inputs[1:nnet.layerSizes[layer],:]+biases[nnetInd][layer]*ones(1,numInputs),0)
+    end
+
+    outputs = weights[nnetInd][end]*inputs[1:nnet.layerSizes[end-1],:]+biases[nnetInd][end]*ones(1,numInputs)
+
+    for i=1:outputSize
+        for j=1:numInputs
+            outputs[i,j] = outputs[i,j]*nnet.ranges[end]+nnet.means[end]
+        end
+    end
+
+    return outputs
+end
+
 function num_inputs(nnet::NNet)
     if nnet.numNetworks==1
         return nnet.inputSize
