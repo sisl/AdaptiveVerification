@@ -49,7 +49,7 @@ function verify_and_split_mdp!(s, lb_s, ub_s, curr_node, curr_lbs, curr_ubs, nne
     # Decide if we should split
     max_diff = minimum(curr_ubs[1:max_dim] .- curr_lbs[1:max_dim])
     if (length(unique(corner_advs)) > 1) && (max_diff > min_diff)
-        split_dims = split_dims_from_corners_2d(corner_advs)
+        split_dims = split_dims_from_corners_3d(corner_advs)
         split_specific_dims!(s, lb_s, ub_s, curr_node, curr_lbs, curr_ubs, split_dims)
     else
         # Run verification on possible advisories
@@ -70,7 +70,7 @@ function verify_and_split!(s, lb_s, ub_s, curr_node, curr_lbs, curr_ubs, nnet;
     # Decide if we should split
     max_diff = minimum(curr_ubs[1:max_dim] .- curr_lbs[1:max_dim])
     if (length(unique(corner_advs)) > 1) && (max_diff > min_diff)
-        split_dims = split_dims_from_corners_2d(corner_advs)
+        split_dims = split_dims_from_corners_3d(corner_advs)
         split_specific_dims!(s, lb_s, ub_s, curr_node, curr_lbs, curr_ubs, split_dims)
     else
         # Run verification on possible advisories
